@@ -1,0 +1,254 @@
+﻿@page "/counter"
+
+@using CpCinemaBlazor.ApiRequest
+@using CpCinemaBlazor.ApiRequest.Model
+@using static CpCinemaBlazor.ApiRequest.Model.User
+@rendermode InteractiveServer
+
+<PageTitle>Counter</PageTitle>
+
+<input @bind="addUser.Name" />
+<input @bind="addUser.AboutMe" />
+<input @bind="addUser.Email" />
+<input @bind="addUser.Password" />
+<input type="checkbox" @bind="addUser.Admin" />
+<button @onclick="CreateUser" class="button-17" role="button">Добавить</button>
+
+<p class="text-center fw-bold mb-5 mx-1 mx-md-4 mt-4">
+    <table class="table table-bordered">
+        <thead class="alert-dark">
+            <tr>
+                <td>id_User</td>
+                <td>Name</td>
+                <td>AboutMe</td>
+                <td>Email</td>
+                <td>Password</td>
+                <td>Edit</td>
+            </tr>
+        </thead>
+
+        <tbody>
+            @if (users == null)
+            {
+                <tr>
+                    <td colspan="6" class="text-center">Loading...</td>
+                </tr>
+            }
+            else if (!users.Any())
+            {
+                <tr>
+                    <td colspan="6" class="text-center">No users found</td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var user in users)
+                {
+                    <tr>
+                        <td>
+                            @user.id_User
+                        </td>
+                        <td>
+                            @if (user.Edit)
+                            {
+                                <input @bind="@user.Name" placeholder="Имя" pattern="[а-яА-Я]+" />
+                            }
+                            else
+                            {
+                                @user.Name
+                            }
+                        </td>
+                        <td>
+                            @if (user.Edit)
+                            {
+                                <input @bind="@user.AboutMe" placeholder="О себе" pattern="[а-яА-Я]+" />
+                            }
+                            else
+                            {
+                                @user.AboutMe
+                            }
+                        </td>
+                        <td>
+                            @if (user.Edit)
+                            {
+                                <input @bind="@user.Email" placeholder="Почта"/>
+                            }
+                            else
+                            {
+                                @user.Email
+                            }
+                        </td>
+                        <td>
+                            @if (user.Edit)
+                            {
+                                <input @bind="@user.Password" placeholder="Пароль" />
+                            }
+                            else
+                            {
+                                @user.Password
+                            }
+                        </td>                        
+                        <td>
+                            @if (user.Edit)
+                            {
+                                <button @onclick="() => SaveUser(user)">Сохранить</button>
+                                <button @onclick="() => CancelUser(user)">Отмена</button>
+                            }
+                            else
+                            {
+                                <button @onclick="() => EditUser(user)">Изменить</button>
+                                <button @onclick="() => DeleteUser(user)">Удалить</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</p>
+
+@code {
+    private List<UserDataShort> users;
+
+    AddUser addUser = new AddUser();
+
+    UserDataShort UserData = new UserDataShort();
+
+    CurUser curUser;
+    bool isAdmin;
+    bool isAuth;
+
+    [Inject] private ApiRequestService ApiRequest { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // curUser = SingletoneUser.GetUser();
+        // isAuth = curUser != null;
+        // isAdmin = curUser?.isAdmin == true;
+
+        // if (isAuth && isAdmin)
+        // {
+
+            await GetUsers();
+
+        // }
+    }
+
+    private async Task GetUsers()
+    {
+        var userData = await ApiRequest.GetUsersAsync();
+        users = userData ?? [];
+
+        StateHasChanged();
+    }
+
+    void EditUser(UserDataShort user)
+    {
+        user.Edit = true;
+    }
+
+    async void DeleteUser(UserDataShort user)
+    {
+        ApiRequest.DeleteUserAsync(user.id_User);
+        await GetUsers();
+    }
+
+    void CancelUser(UserDataShort user) => user.Edit = false;
+    void SaveUser(UserDataShort user)
+    {
+        user.Edit = false;
+        if (!string.IsNullOrWhiteSpace(user.Name) &&
+       !string.IsNullOrWhiteSpace(user.AboutMe) &&
+       !string.IsNullOrWhiteSpace(user.Email) &&
+       !string.IsNullOrWhiteSpace(user.Password))
+        {
+            UserProd userProd = new UserProd();
+            userProd.id_User = user.id_User;
+            userProd.Name = user.Name;
+            userProd.AboutMe = user.AboutMe;
+            userProd.Email = user.Email;
+            userProd.Password = user.Password;
+
+            ApiRequest.EditUserAsync(userProd);
+        }
+        GetUsers();
+    }
+    
+    private void CreateUser()
+    {
+        ApiRequest.CreateUserLoginAsync(addUser);
+        GetUsers();
+    }
+}
+
+<style>
+    .button-17 {
+        align-items: center;
+        appearance: none;
+        background-color: #fff;
+        border-radius: 24px;
+        border-style: none;
+        box-shadow: rgba(0, 0, 0, .2) 0 3px 5px -1px,rgba(0, 0, 0, .14) 0 6px 10px 0,rgba(0, 0, 0, .12) 0 1px 18px 0;
+        box-sizing: border-box;
+        color: #3c4043;
+        cursor: pointer;
+        display: inline-flex;
+        fill: currentcolor;
+        font-family: "Google Sans",Roboto,Arial,sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        height: 48px;
+        justify-content: center;
+        letter-spacing: .25px;
+        line-height: normal;
+        max-width: 100%;
+        overflow: visible;
+        padding: 2px 24px;
+        position: relative;
+        text-align: center;
+        text-transform: none;
+        transition: box-shadow 280ms cubic-bezier(.4, 0, .2, 1),opacity 15ms linear 30ms,transform 270ms cubic-bezier(0, 0, .2, 1) 0ms;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+        width: auto;
+        will-change: transform,opacity;
+        z-index: 0;
+    }
+
+        .button-17:hover {
+            background: #F6F9FE;
+            color: #174ea6;
+        }
+
+        .button-17:active {
+            box-shadow: 0 4px 4px 0 rgb(60 64 67 / 30%), 0 8px 12px 6px rgb(60 64 67 / 15%);
+            outline: none;
+        }
+
+        .button-17:focus {
+            outline: none;
+            border: 2px solid #4285f4;
+        }
+
+        .button-17:not(:disabled) {
+            box-shadow: rgba(60, 64, 67, .3) 0 1px 3px 0, rgba(60, 64, 67, .15) 0 4px 8px 3px;
+        }
+
+            .button-17:not(:disabled):hover {
+                box-shadow: rgba(60, 64, 67, .3) 0 2px 3px 0, rgba(60, 64, 67, .15) 0 6px 10px 4px;
+            }
+
+            .button-17:not(:disabled):focus {
+                box-shadow: rgba(60, 64, 67, .3) 0 1px 3px 0, rgba(60, 64, 67, .15) 0 4px 8px 3px;
+            }
+
+            .button-17:not(:disabled):active {
+                box-shadow: rgba(60, 64, 67, .3) 0 4px 4px 0, rgba(60, 64, 67, .15) 0 8px 12px 6px;
+            }
+
+        .button-17:disabled {
+            box-shadow: rgba(60, 64, 67, .3) 0 1px 3px 0, rgba(60, 64, 67, .15) 0 4px 8px 3px;
+        }
+
+</style>

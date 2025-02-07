@@ -1,0 +1,103 @@
+﻿@page "/Account/Registration"
+
+@using System.ComponentModel.DataAnnotations
+@using CpCinemaBlazor.ApiRequest.Model
+@using Microsoft.AspNetCore.Authentication
+@using CpCinemaBlazor.Data
+@using CpCinemaBlazor.ApiRequest
+@using ApiRequest.Services
+@using System
+@using System.IdentityModel.Tokens.Jwt
+@using System.Security.Claims
+@using static CpCinemaBlazor.ApiRequest.Model.User
+
+@inject ILogger<Login> Logger
+@inject NavigationManager Navigation
+
+<PageTitle>Log in</PageTitle>
+
+<h1>Log in</h1>
+<div class="row">
+    <div class="col-md-4">
+        <section>
+            <EditForm Model="@Input" OnValidSubmit="RegBtn" FormName="RegForm">
+                <DataAnnotationsValidator />
+                <hr />
+                <ValidationSummary class="text-danger" role="alert" />
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" />
+                    <label for="email" class="form-label">Почта</label>
+                    <ValidationMessage For="() => Input.Email" class="text-danger" />
+                </div>
+                <div class="form-floating mb-3">
+                    <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" aria-required="true"/>
+                    <label for="password" class="form-label">Пароль</label>
+                    <ValidationMessage For="() => Input.Password" class="text-danger" />
+                </div>
+                
+                <ValidationSummary class="text-danger" role="alert" />
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="Input.Name" class="form-control" autocomplete="username" aria-required="true" />
+                    <label for="email" class="form-label">Имя</label>
+                    <ValidationMessage For="() => Input.Name" class="text-danger" />
+                </div>
+                <ValidationSummary class="text-danger" role="alert" />
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="Input.AboutMe" class="form-control" autocomplete="username" />
+                    <label for="email" class="form-label">О себе</label>
+                    <ValidationMessage For="() => Input.AboutMe" class="text-danger" />
+                </div>
+
+                <div>
+                    <button type="submit" class="w-100 btn btn-lg btn-primary">Зарегистрироваться</button>
+                </div>
+            </EditForm>
+        </section>
+    </div>
+</div>
+
+@code {
+    AddUser user = new AddUser();
+    [Inject] private ApiRequestService ApiRequest { get; set; }
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+
+        [Required]
+        public string Name { get; set; } = "";
+
+        public string AboutMe { get; set; } = "";
+
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
+    }
+
+    void RegBtn()
+    {
+        try
+        {
+            user.Name = Input.Name;
+            user.AboutMe = Input.AboutMe;
+            user.Email = Input.Email;
+            user.Password = Input.Password;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+
+    }
+}
