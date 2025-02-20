@@ -16,20 +16,20 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddScoped<ApiRequestService>();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5005/") });
 
-builder.Services.AddScoped<LocalStorageService>();
+//builder.Services.AddScoped<LocalStorageService>();
 
 builder.Services.AddHttpClient("API", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5005/");
-})
-.AddHttpMessageHandler<BearerTokenHandler>();
-
-// Регистрация BearerTokenHandler
-builder.Services.AddTransient<BearerTokenHandler>(sp =>
-{
-    var localStorage = sp.GetRequiredService<LocalStorageService>();
-    return new BearerTokenHandler(localStorage);
 });
+//.AddHttpMessageHandler<BearerTokenHandler>();
+
+//// Регистрация BearerTokenHandler
+//builder.Services.AddTransient<BearerTokenHandler>(sp =>
+//{
+//    var localStorage = sp.GetRequiredService<LocalStorageService>();
+//    return new BearerTokenHandler(localStorage);
+//});
 
 builder.Services.AddSingleton<UserService>();
 
@@ -37,21 +37,24 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// Загрузка токена при старте приложения
+//using (var scope = app.Services.CreateScope())
+//{
+//    var localStorage = scope.ServiceProvider.GetRequiredService<LocalStorageService>();
+//    SingletoneUser.Init(localStorage);
+//    await SingletoneUser.LoadUserFromLocalStorage();
+//}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-
 app.UseStaticFiles();
 app.UseAntiforgery();
-//app.UseAuthentication();
-//app.UseAuthorization();
-
 app.MapRazorPages();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
