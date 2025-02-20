@@ -1,3 +1,4 @@
+using Blazored.Toast;
 using CpCinemaBlazor.ApiRequest;
 using CpCinemaBlazor.ApiRequest.Services;
 using CpCinemaBlazor.Components;
@@ -34,6 +35,7 @@ builder.Services.AddHttpClient("API", client =>
 builder.Services.AddSingleton<UserService>();
 
 builder.Services.AddAuthorization();
+builder.Services.AddBlazoredToast();
 
 var app = builder.Build();
 

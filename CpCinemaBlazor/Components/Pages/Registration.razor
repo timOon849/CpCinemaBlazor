@@ -1,6 +1,7 @@
 ﻿@page "/Account/Registration"
 
 @using System.ComponentModel.DataAnnotations
+@using Blazored.Toast.Services
 @using CpCinemaBlazor.ApiRequest.Model
 @using Microsoft.AspNetCore.Authentication
 @using CpCinemaBlazor.Data
@@ -12,6 +13,7 @@
 @using static CpCinemaBlazor.Components.Pages.Login
 @using static CpCinemaBlazor.ApiRequest.Model.User
 
+@inject IToastService ToastService
 @inject ILogger<Login> Logger
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
@@ -95,12 +97,11 @@
             user.AboutMe = Input.AboutMe;
             user.Email = Input.Email;
             user.Password = Input.Password;
-        
+
             var token = await ApiRequest.CreateUserLoginAsync(user);
 
             if (!string.IsNullOrEmpty(token))
             {
-                Navigation.NavigateTo("/counter");
                 var principal = JwtService.DecodeJwtToken(token);
 
                 int Id = Convert.ToInt32(principal.FindFirst("id_User")?.Value);
@@ -108,16 +109,22 @@
                 string About = principal.FindFirst("AboutMe")?.Value;
                 bool Admin = Convert.ToBoolean(principal.FindFirst("isAdmin")?.Value);
                 // SingletoneUser.InitUser(new CurUser { id_User = Id, AboutMe = About, Name = NameT, isAdmin = Admin, Token = token });
+                ToastService.ShowSuccess("Регистрация прошла успешно!");
+                Navigation.NavigateTo("/counter");
 
             }
             else
             {
                 Console.WriteLine("Authorization failed: No token received");
+                ToastService.ShowError("Регистрация не пройдена! Такой E-mail уже зарегистрирован");
+
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
+            ToastService.ShowError($"Регистрация не пройдена! Детали ошибки: {ex}");
+
         }
 
     }

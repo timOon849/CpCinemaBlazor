@@ -1,6 +1,7 @@
 ﻿@page "/Account/Login"
 
 @using System.ComponentModel.DataAnnotations
+@using Blazored.Toast.Services
 @using CpCinemaBlazor.ApiRequest.Model
 @using Microsoft.AspNetCore.Authentication
 @using CpCinemaBlazor.Data
@@ -11,6 +12,7 @@
 @using System.Security.Claims
 @using static CpCinemaBlazor.ApiRequest.Model.User
 
+@inject IToastService ToastService
 @inject ILogger<Login> Logger
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
@@ -78,13 +80,12 @@
         public bool RememberMe { get; set; }
     }
 
-    async Task AuthBtn()
+    public async Task AuthBtn()
     {
         try
         {
             user.Email = Input.Email;
             user.Password = Input.Password;
-
             var token = await ApiRequest.AuthorizationAsync(user);
 
             if (!string.IsNullOrEmpty(token))
@@ -97,16 +98,22 @@
                 string About = principal.FindFirst("AboutMe")?.Value;
                 bool Admin = Convert.ToBoolean(principal.FindFirst("isAdmin")?.Value);
                 // SingletoneUser.InitUser(new CurUser { id_User = Id, AboutMe = About, Name = NameT, isAdmin = Admin, Token = token });
-                
+                ToastService.ShowSuccess("Авторизация прошла успешно!");
+
+
             }
             else
             {
                 errorMessage = "Authorization failed: No token received";
+                ToastService.ShowError("Авторизация не пройдена! Логин или пароль неверные");
+
             }
         }
         catch (Exception ex)
         {
             errorMessage = $"Authorization failed: {ex.Message}";
+            ToastService.ShowError($"Авторизация не пройдена! Детали ошибки: {ex}");
+
         }
     }
 
