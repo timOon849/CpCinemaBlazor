@@ -13,6 +13,7 @@
 
 @inject ILogger<Login> Logger
 @inject NavigationManager Navigation
+@rendermode InteractiveServer
 
 <PageTitle>Log in</PageTitle>
 
@@ -95,7 +96,7 @@
                 string NameT = principal.FindFirst("Name")?.Value;
                 string About = principal.FindFirst("AboutMe")?.Value;
                 bool Admin = Convert.ToBoolean(principal.FindFirst("isAdmin")?.Value);
-                SingletoneUser.InitUser(new CurUser { id_User = Id, AboutMe = About, Name = NameT, isAdmin = Admin, Token = token });
+               // SingletoneUser.InitUser(new CurUser { id_User = Id, AboutMe = About, Name = NameT, isAdmin = Admin, Token = token });
                 
             }
             else

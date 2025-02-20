@@ -9,10 +9,12 @@
 @using System
 @using System.IdentityModel.Tokens.Jwt
 @using System.Security.Claims
+@using static CpCinemaBlazor.Components.Pages.Login
 @using static CpCinemaBlazor.ApiRequest.Model.User
 
 @inject ILogger<Login> Logger
 @inject NavigationManager Navigation
+@rendermode InteractiveServer
 
 <PageTitle>Log in</PageTitle>
 
@@ -85,7 +87,7 @@
         public bool RememberMe { get; set; }
     }
 
-    void RegBtn()
+    async Task RegBtn()
     {
         try
         {
@@ -93,6 +95,25 @@
             user.AboutMe = Input.AboutMe;
             user.Email = Input.Email;
             user.Password = Input.Password;
+        
+            var token = await ApiRequest.CreateUserLoginAsync(user);
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                Navigation.NavigateTo("/counter");
+                var principal = JwtService.DecodeJwtToken(token);
+
+                int Id = Convert.ToInt32(principal.FindFirst("id_User")?.Value);
+                string NameT = principal.FindFirst("Name")?.Value;
+                string About = principal.FindFirst("AboutMe")?.Value;
+                bool Admin = Convert.ToBoolean(principal.FindFirst("isAdmin")?.Value);
+               // SingletoneUser.InitUser(new CurUser { id_User = Id, AboutMe = About, Name = NameT, isAdmin = Admin, Token = token });
+
+            }
+            else
+            {
+                Console.WriteLine("Authorization failed: No token received");
+            }
         }
         catch (Exception ex)
         {
