@@ -1,3 +1,4 @@
+using Blazored.LocalStorage;
 using Blazored.Toast;
 using CpCinemaBlazor.ApiRequest;
 using CpCinemaBlazor.ApiRequest.Services;
@@ -13,29 +14,23 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+builder.Services.AddSingleton<SingletoneUser>();
+
 
 builder.Services.AddScoped<ApiRequestService>();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5005/") });
-
-//builder.Services.AddScoped<LocalStorageService>();
+builder.Services.AddScoped<NotificationService>();
 
 builder.Services.AddHttpClient("API", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5005/");
 });
-//.AddHttpMessageHandler<BearerTokenHandler>();
-
-//// Регистрация BearerTokenHandler
-//builder.Services.AddTransient<BearerTokenHandler>(sp =>
-//{
-//    var localStorage = sp.GetRequiredService<LocalStorageService>();
-//    return new BearerTokenHandler(localStorage);
-//});
 
 builder.Services.AddSingleton<UserService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddBlazoredToast();
+builder.Services.AddBlazoredLocalStorage();
 
 var app = builder.Build();
 
@@ -47,7 +42,6 @@ var app = builder.Build();
 //    await SingletoneUser.LoadUserFromLocalStorage();
 //}
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);

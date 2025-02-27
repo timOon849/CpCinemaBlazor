@@ -1,0 +1,124 @@
+﻿/* Общие настройки */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa; /* Светло-серый фон */
+    color: #343a40; /* Темно-серый текст */
+}
+
+.main-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Верхнее меню */
+.top-menu {
+    background-color: #007bff; /* Синий цвет шапки */
+    color: white;
+    padding: 10px 20px;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.menu-items {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+}
+
+    .menu-items li a {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s ease;
+    }
+
+        .menu-items li a:hover {
+            color: #e0e0ff; /* Более светлый синий при наведении */
+        }
+
+/* Основной контент */
+.content {
+    flex: 1;
+    padding: 20px;
+}
+
+/* Кнопки */
+button {
+    background-color: #28a745; /* Зеленый акцент */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+    button:hover {
+        background-color: #218838; /* Темнее зеленый при наведении */
+    }
+
+/* Уведомления */
+.notifications-container {
+    position: fixed;
+    top: 80px; /* Отступ от верхнего меню */
+    right: 20px;
+    z-index: 1000;
+}
+
+.notification {
+    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 5px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.success {
+    background-color: #28a745; /* Зеленый */
+}
+
+.error {
+    background-color: #dc3545; /* Красный */
+}
+
+.close-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+    .close-button:hover {
+        transform: scale(1.2);
+    }
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .menu-items {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+        .menu-items li {
+            width: 100%;
+            text-align: center;
+        }
+}

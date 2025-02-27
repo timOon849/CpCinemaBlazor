@@ -1,50 +1,40 @@
-﻿//using CpCinemaBlazor.ApiRequest.Model;
-//using CpCinemaBlazor.ApiRequest.Services;
+﻿using CpCinemaBlazor.ApiRequest.Model;
 
-//namespace CpCinemaBlazor.ApiRequest
-//{
-//    public static class SingletoneUser
-//    {
-//        public static CurUser curuser;
-//        private static LocalStorageService _localStorage;
 
-//        public static void Init(LocalStorageService localStorage)
-//        {
-//            _localStorage = localStorage;
-//        }
 
-//        public static async Task InitUser(CurUser user)
-//        {
-//            curuser = user;
-//            // Сохраняем токен в локальном хранилище
-//            if (!string.IsNullOrEmpty(user.Token) && _localStorage != null)
-//            {
-//                await _localStorage.SetItemAsync("authToken", user.Token);
-//            }
-//        }
+namespace CpCinemaBlazor.ApiRequest
+{
+    public class SingletoneUser
+    {
+        private CurUser _currentUser;
 
-//        public static async Task LoadUserFromLocalStorage()
-//        {
-//            if (_localStorage == null) return;
+        public event Action OnAuthStateChanged;
 
-//            else
-//            {
-//                var token = await _localStorage.GetItemAsync("authToken");
-//                if (!string.IsNullOrEmpty(token))
-//                {
-//                    curuser = new CurUser { Token = token }; // Восстанавливаем пользователя
-//                }
-//            }
-//        }
+        public CurUser CurrentUser
+        {
+            get => _currentUser;
+            set
+            {
+                _currentUser = value;
+                NotifyAuthStateChanged();
+            }
+        }
 
-//        public static string GetToken()
-//        {
-//            return curuser?.Token;
-//        }
+        public bool IsAuthenticated => _currentUser != null;
 
-//        public static async Task ExitUser()
-//        {
-//            curuser = null;
-//        }
-//    }
-//}
+        public void Login(CurUser user)
+        {
+            CurrentUser = user;
+        }
+
+        public void Logout()
+        {
+            CurrentUser = null;
+        }
+
+        private void NotifyAuthStateChanged()
+        {
+            OnAuthStateChanged?.Invoke();
+        }
+    }
+}

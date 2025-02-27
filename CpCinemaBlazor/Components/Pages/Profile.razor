@@ -1,0 +1,58 @@
+﻿@page "/profile"
+@using Blazored.Toast.Services
+@using CpCinemaBlazor.ApiRequest
+@using CpCinemaBlazor.ApiRequest.Model
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
+@using System.Timers
+
+@inject NavigationManager Navigation
+@inject IToastService ToastService
+@rendermode InteractiveServer
+
+<h2 class="profile-title">Профиль пользователя</h2>
+
+<div class="profile-container">
+    <div class="profile-avatar">
+        <img src="@AvatarUrl" alt="Аватар пользователя" class="avatar-image" />
+    </div>
+
+    <div class="profile-info">
+        <p><strong>Имя:</strong> @(curuser != null ? curuser.Name : "Неизвестно")</p>
+        <p><strong>Описание:</strong> @(curuser != null ? curuser.AboutMe : "Не указано")</p>
+        <p><strong>Токен:</strong> @(curuser != null && !string.IsNullOrEmpty(curuser.Token) ? "Авторизован" : "Не авторизован")</p>
+    </div>
+
+    <div class="profile-actions">
+        <button class="btn btn-edit" @onclick="EditProfile">Редактировать профиль</button>
+        <button class="btn btn-logout" @onclick="Logout">Выйти</button>
+    </div>
+</div>
+
+@code {
+    private List<NotificationService.NotificationModel> Notifications = new List<NotificationService.NotificationModel>();
+
+    private string AvatarUrl = "https://via.placeholder.com/150";
+    private CurUser curuser = SingletoneUser.curuser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ToastService.ShowSuccess("Авторизация прошла успешно!");
+
+        if (SingletoneUser.curuser == null)
+        {
+            await SingletoneUser.LoadUserFromLocalStorage();
+        }
+        curuser = SingletoneUser.curuser ?? new CurUser(); // Инициализация по умолчанию
+    }
+
+    private void EditProfile()
+    {
+        Navigation.NavigateTo("/edit-profile");
+    }
+
+    private async Task Logout()
+    {
+        await SingletoneUser.ExitUser();
+        Navigation.NavigateTo("/login");
+    }
+}

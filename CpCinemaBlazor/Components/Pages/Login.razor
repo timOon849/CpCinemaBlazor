@@ -6,15 +6,18 @@
 @using Microsoft.AspNetCore.Authentication
 @using CpCinemaBlazor.Data
 @using CpCinemaBlazor.ApiRequest
-@using ApiRequest.Services
+@using static CpCinemaBlazor.ApiRequest.Model.User
 @using System
 @using System.IdentityModel.Tokens.Jwt
 @using System.Security.Claims
-@using static CpCinemaBlazor.ApiRequest.Model.User
+@using System.Timers
 
+
+@inject SingletoneUser SingletoneUser
 @inject IToastService ToastService
 @inject ILogger<Login> Logger
 @inject NavigationManager Navigation
+@inject NotificationService NotificationService
 @rendermode InteractiveServer
 
 <PageTitle>Log in</PageTitle>
@@ -36,7 +39,7 @@
                 <div class="form-floating mb-3">
                     <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" aria-required="true"/>
                     <label for="password" class="form-label">Пароль</label>
-                    <ValidationMessage For="() => Input.Password" class="text-danger" />
+                    <ValidationMessage For="() => Input.Password" class="text-danger"/>
                 </div>
                 <div>
                     <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
@@ -52,13 +55,21 @@
 </div>
 
 @code {
+    protected override void OnInitialized()
+    {
+        SingletoneUser.OnAuthStateChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        SingletoneUser.OnAuthStateChanged -= StateHasChanged;
+    }
+    private List<NotificationService.NotificationModel> Notifications = new List<NotificationService.NotificationModel>();
+
     AuthUser user = new AuthUser();
     [Inject] private ApiRequestService ApiRequest { get; set; }
 
     private string? errorMessage;
-
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = new();
@@ -90,30 +101,88 @@
 
             if (!string.IsNullOrEmpty(token))
             {
-                Navigation.NavigateTo("/counter");
+                Navigation.NavigateTo("/profile");
+
                 var principal = JwtService.DecodeJwtToken(token);
-
                 int Id = Convert.ToInt32(principal.FindFirst("id_User")?.Value);
-                string NameT = principal.FindFirst("Name")?.Value;
-                string About = principal.FindFirst("AboutMe")?.Value;
+                string NameT = principal.FindFirst("Name")?.Value ?? "Неизвестный";
+                string About = principal.FindFirst("AboutMe")?.Value ?? "Нет информации";
                 bool Admin = Convert.ToBoolean(principal.FindFirst("isAdmin")?.Value);
-                // SingletoneUser.InitUser(new CurUser { id_User = Id, AboutMe = About, Name = NameT, isAdmin = Admin, Token = token });
+
+                SingletoneUser.Login(new CurUser
+                    {
+                        id_User = Id,
+                        AboutMe = About,
+                        Name = NameT,
+                        isAdmin = Admin,
+                        Token = token // Сохраняем токен
+                    });
+
                 ToastService.ShowSuccess("Авторизация прошла успешно!");
-
-
+                NotificationService.ShowSuccess("Авторизация прошла успешно!");
             }
             else
             {
                 errorMessage = "Authorization failed: No token received";
                 ToastService.ShowError("Авторизация не пройдена! Логин или пароль неверные");
-
             }
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Ошибка при авторизации пользователя.");
             errorMessage = $"Authorization failed: {ex.Message}";
-            ToastService.ShowError($"Авторизация не пройдена! Детали ошибки: {ex}");
+            ToastService.ShowError($"Авторизация не пройдена! Детали ошибки: {ex.Message}");
+        }
+    }
+    private void Login()
+    {
+        try
+        {
+            if (SingletoneUser == null)
+            {
+                throw new InvalidOperationException("SingletoneUser не был внедрен.");
+            }
 
+            var user = new CurUser
+                {
+                    id_User = 1,
+                    Name = "Иван Иванов",
+                    Token = "your_jwt_token_here", // Замените на реальный токен
+                    AboutMe = "Тестовый пользователь",
+                    isAdmin = false
+                };
+
+            SingletoneUser.Login(user);
+
+            Console.WriteLine("Пользователь успешно авторизован.");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Ошибка при вызове метода Login.");
+            ToastService.ShowError($"Ошибка: {ex.Message}");
+        }
+    }
+
+    private async void HandleNotificationAdded(NotificationService.NotificationModel notification)
+    {
+        Notifications.Add(notification);
+        StateHasChanged();
+
+        await Task.Delay(5000); // Задержка в 5 секунд
+
+        InvokeAsync(() =>
+        {
+            RemoveNotification(notification.Id);
+            StateHasChanged();
+        });
+    }
+
+    private void RemoveNotification(Guid id)
+    {
+        var notification = Notifications.FirstOrDefault(n => n.Id == id);
+        if (notification != null)
+        {
+            Notifications.Remove(notification);
         }
     }
 

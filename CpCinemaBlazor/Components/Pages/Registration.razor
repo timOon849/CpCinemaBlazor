@@ -12,7 +12,6 @@
 @using System.Security.Claims
 @using static CpCinemaBlazor.Components.Pages.Login
 @using static CpCinemaBlazor.ApiRequest.Model.User
-
 @inject IToastService ToastService
 @inject ILogger<Login> Logger
 @inject NavigationManager Navigation
@@ -108,7 +107,7 @@
                 string NameT = principal.FindFirst("Name")?.Value;
                 string About = principal.FindFirst("AboutMe")?.Value;
                 bool Admin = Convert.ToBoolean(principal.FindFirst("isAdmin")?.Value);
-                // SingletoneUser.InitUser(new CurUser { id_User = Id, AboutMe = About, Name = NameT, isAdmin = Admin, Token = token });
+                SingletoneUser.InitUser(new CurUser { id_User = Id, AboutMe = About, Name = NameT, isAdmin = Admin, Token = token });
                 ToastService.ShowSuccess("Регистрация прошла успешно!");
                 Navigation.NavigateTo("/counter");
 
