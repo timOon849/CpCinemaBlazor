@@ -1,48 +1,91 @@
 ﻿@page "/profile"
 @using Blazored.Toast.Services
-@using CpCinemaBlazor.ApiRequest
 @using CpCinemaBlazor.ApiRequest.Model
-@using Microsoft.EntityFrameworkCore.Metadata.Internal
-@using System.Timers
 
+@inject SingletoneUser SingletoneUser
 @inject NavigationManager Navigation
 @inject IToastService ToastService
 @rendermode InteractiveServer
 
 <h2 class="profile-title">Профиль пользователя</h2>
+<style>
+    .profile-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 20px;
+    }
 
-<div class="profile-container">
-    <div class="profile-avatar">
-        <img src="@AvatarUrl" alt="Аватар пользователя" class="avatar-image" />
-    </div>
+    .profile-avatar img {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
 
-    <div class="profile-info">
-        <p><strong>Имя:</strong> @(curuser != null ? curuser.Name : "Неизвестно")</p>
-        <p><strong>Описание:</strong> @(curuser != null ? curuser.AboutMe : "Не указано")</p>
-        <p><strong>Токен:</strong> @(curuser != null && !string.IsNullOrEmpty(curuser.Token) ? "Авторизован" : "Не авторизован")</p>
-    </div>
+    .profile-info {
+        text-align: center;
+        margin: 20px 0;
+    }
 
-    <div class="profile-actions">
-        <button class="btn btn-edit" @onclick="EditProfile">Редактировать профиль</button>
-        <button class="btn btn-logout" @onclick="Logout">Выйти</button>
+    .profile-actions button {
+        margin: 5px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .btn-edit {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .btn-logout {
+        background-color: #dc3545;
+        color: white;
+    }
+</style>
+@if (SingletoneUser.IsAuthenticated)
+{
+    <div class="profile-container">
+        <div class="profile-avatar">
+            <img src="@AvatarUrl" alt="Аватар пользователя" class="avatar-image" />
+        </div>
+
+        <div class="profile-info">
+            <p><strong>Имя:</strong> @SingletoneUser.CurrentUser.Name</p>
+            <p><strong>Описание:</strong> @SingletoneUser.CurrentUser.AboutMe</p>
+            <p><strong>Токен:</strong> @(string.IsNullOrEmpty(SingletoneUser.CurrentUser.Token) ? "Не авторизован" : "Авторизован")</p>
+        </div>
+
+        <div class="profile-actions">
+            <button class="btn btn-edit" @onclick="EditProfile">Редактировать профиль</button>
+            <button class="btn btn-logout" @onclick="Logout">Выйти</button>
+        </div>
     </div>
-</div>
+}
+else
+{
+    <p>Вы не авторизованы. Пожалуйста, <a href="/Account/Login">войдите</a>.</p>
+}
 
 @code {
-    private List<NotificationService.NotificationModel> Notifications = new List<NotificationService.NotificationModel>();
-
     private string AvatarUrl = "https://via.placeholder.com/150";
-    private CurUser curuser = SingletoneUser.curuser;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        ToastService.ShowSuccess("Авторизация прошла успешно!");
-
-        if (SingletoneUser.curuser == null)
+        if (firstRender)
         {
             await SingletoneUser.LoadUserFromLocalStorage();
+            StateHasChanged(); // Обновляем интерфейс после загрузки данных
         }
-        curuser = SingletoneUser.curuser ?? new CurUser(); // Инициализация по умолчанию
+    }
+
+    public void Dispose()
+    {
+        // Отписываемся от события при уничтожении компонента
+        SingletoneUser.OnAuthStateChanged -= StateHasChanged;
     }
 
     private void EditProfile()
@@ -52,7 +95,11 @@
 
     private async Task Logout()
     {
-        await SingletoneUser.ExitUser();
-        Navigation.NavigateTo("/login");
+        if (SingletoneUser != null)
+        {
+            await SingletoneUser.Logout();
+            ToastService.ShowSuccess("Вы вышли из системы.");
+            Navigation.NavigateTo("/Account/Login");
+        }
     }
 }

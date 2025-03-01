@@ -3,23 +3,41 @@
 @using System.ComponentModel.DataAnnotations
 @using Blazored.Toast.Services
 @using CpCinemaBlazor.ApiRequest.Model
-@using Microsoft.AspNetCore.Authentication
-@using CpCinemaBlazor.Data
 @using CpCinemaBlazor.ApiRequest
-@using ApiRequest.Services
-@using System
 @using System.IdentityModel.Tokens.Jwt
 @using System.Security.Claims
-@using static CpCinemaBlazor.Components.Pages.Login
 @using static CpCinemaBlazor.ApiRequest.Model.User
+
+@inject SingletoneUser SingletoneUser
+@inject ApiRequestService ApiRequest
 @inject IToastService ToastService
-@inject ILogger<Login> Logger
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-<PageTitle>Log in</PageTitle>
+<style>
+    .form-floating input {
+        height: 48px;
+        font-size: 16px;
+    }
 
-<h1>Log in</h1>
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #004085;
+        }
+
+    .text-danger {
+        color: red;
+    }
+</style>
+
+<PageTitle>Registration</PageTitle>
+
+<h1>Регистрация</h1>
 <div class="row">
     <div class="col-md-4">
         <section>
@@ -27,27 +45,28 @@
                 <DataAnnotationsValidator />
                 <hr />
                 <ValidationSummary class="text-danger" role="alert" />
+
                 <div class="form-floating mb-3">
                     <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" />
                     <label for="email" class="form-label">Почта</label>
                     <ValidationMessage For="() => Input.Email" class="text-danger" />
                 </div>
+
                 <div class="form-floating mb-3">
-                    <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" aria-required="true"/>
+                    <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" />
                     <label for="password" class="form-label">Пароль</label>
                     <ValidationMessage For="() => Input.Password" class="text-danger" />
                 </div>
-                
-                <ValidationSummary class="text-danger" role="alert" />
+
                 <div class="form-floating mb-3">
-                    <InputText @bind-Value="Input.Name" class="form-control" autocomplete="username" aria-required="true" />
-                    <label for="email" class="form-label">Имя</label>
+                    <InputText @bind-Value="Input.Name" class="form-control" autocomplete="name" aria-required="true" />
+                    <label for="name" class="form-label">Имя</label>
                     <ValidationMessage For="() => Input.Name" class="text-danger" />
                 </div>
-                <ValidationSummary class="text-danger" role="alert" />
+
                 <div class="form-floating mb-3">
-                    <InputText @bind-Value="Input.AboutMe" class="form-control" autocomplete="username" />
-                    <label for="email" class="form-label">О себе</label>
+                    <InputText @bind-Value="Input.AboutMe" class="form-control" autocomplete="aboutme" />
+                    <label for="aboutme" class="form-label">О себе</label>
                     <ValidationMessage For="() => Input.AboutMe" class="text-danger" />
                 </div>
 
@@ -60,15 +79,6 @@
 </div>
 
 @code {
-    AddUser user = new AddUser();
-    [Inject] private ApiRequestService ApiRequest { get; set; }
-
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
-
-    [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = new();
-
     private sealed class InputModel
     {
         [Required]
@@ -83,48 +93,74 @@
         public string Name { get; set; } = "";
 
         public string AboutMe { get; set; } = "";
-
-        [Display(Name = "Remember me?")]
-        public bool RememberMe { get; set; }
     }
 
-    async Task RegBtn()
+    private InputModel Input { get; set; } = new();
+
+    public async Task RegBtn()
     {
         try
         {
-            user.Name = Input.Name;
-            user.AboutMe = Input.AboutMe;
-            user.Email = Input.Email;
-            user.Password = Input.Password;
+            var user = new AddUser
+                {
+                    Name = Input.Name,
+                    AboutMe = Input.AboutMe,
+                    Email = Input.Email,
+                    Password = Input.Password
+                };
 
+            // Вызов API для создания пользователя
             var token = await ApiRequest.CreateUserLoginAsync(user);
 
             if (!string.IsNullOrEmpty(token))
             {
+                // Декодирование токена для получения данных пользователя
                 var principal = JwtService.DecodeJwtToken(token);
 
                 int Id = Convert.ToInt32(principal.FindFirst("id_User")?.Value);
-                string NameT = principal.FindFirst("Name")?.Value;
-                string About = principal.FindFirst("AboutMe")?.Value;
+                string NameT = principal.FindFirst("Name")?.Value ?? "Неизвестный";
+                string About = principal.FindFirst("AboutMe")?.Value ?? "Нет информации";
                 bool Admin = Convert.ToBoolean(principal.FindFirst("isAdmin")?.Value);
-                SingletoneUser.InitUser(new CurUser { id_User = Id, AboutMe = About, Name = NameT, isAdmin = Admin, Token = token });
-                ToastService.ShowSuccess("Регистрация прошла успешно!");
-                Navigation.NavigateTo("/counter");
 
+                // Авторизация пользователя через SingletoneUser
+                await SingletoneUser.Login(new CurUser
+                    {
+                        id_User = Id,
+                        AboutMe = About,
+                        Name = NameT,
+                        isAdmin = Admin,
+                        Token = token
+                    });
+
+                ToastService.ShowSuccess("Регистрация прошла успешно!");
+                Navigation.NavigateTo("/profile");
             }
             else
             {
-                Console.WriteLine("Authorization failed: No token received");
-                ToastService.ShowError("Регистрация не пройдена! Такой E-mail уже зарегистрирован");
-
+                ToastService.ShowError("Регистрация не пройдена! Такой E-mail уже зарегистрирован.");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex);
-            ToastService.ShowError($"Регистрация не пройдена! Детали ошибки: {ex}");
-
+            ToastService.ShowError($"Ошибка регистрации: {ex.Message}");
         }
+    }
 
+    public class JwtService
+    {
+        public static ClaimsPrincipal DecodeJwtToken(string token)
+        {
+            var handler = new JwtSecurityTokenHandler();
+
+            if (handler.CanReadToken(token))
+            {
+                var jwtToken = handler.ReadJwtToken(token);
+                var claims = jwtToken.Claims;
+                var identity = new ClaimsIdentity(claims, "jwt");
+                return new ClaimsPrincipal(identity);
+            }
+
+            throw new Exception("Invalid JWT token");
+        }
     }
 }

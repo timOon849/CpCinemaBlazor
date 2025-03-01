@@ -1,46 +1,31 @@
 using Blazored.LocalStorage;
-using Blazored.Toast;
 using CpCinemaBlazor.ApiRequest;
-using CpCinemaBlazor.ApiRequest.Services;
 using CpCinemaBlazor.Components;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using System.Net.Http.Headers;
+using Blazored.Toast; // Добавьте эту строку
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddRazorPages(); // Добавляем поддержку Razor Pages
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
-
-builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
-builder.Services.AddSingleton<SingletoneUser>();
-
-
+    .AddInteractiveServerComponents(); // Добавляем поддержку Razor Components
+builder.Services.AddBlazoredToast();
+// Регистрация Blazored.LocalStorage
+builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<ApiRequestService>();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5005/") });
-builder.Services.AddScoped<NotificationService>();
+
+//builder.Services.AddScoped<LocalStorageService>();
 
 builder.Services.AddHttpClient("API", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5005/");
 });
-
-builder.Services.AddSingleton<UserService>();
-
-builder.Services.AddAuthorization();
-builder.Services.AddBlazoredToast();
-builder.Services.AddBlazoredLocalStorage();
+// Регистрация SingletoneUser как scoped сервис
+builder.Services.AddScoped<SingletoneUser>();
 
 var app = builder.Build();
-
-// Загрузка токена при старте приложения
-//using (var scope = app.Services.CreateScope())
-//{
-//    var localStorage = scope.ServiceProvider.GetRequiredService<LocalStorageService>();
-//    SingletoneUser.Init(localStorage);
-//    await SingletoneUser.LoadUserFromLocalStorage();
-//}
 
 if (!app.Environment.IsDevelopment())
 {
@@ -50,9 +35,19 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+// Добавляем маршрутизацию
+app.UseRouting();
+
+// Добавляем защиту от подделки запросов
 app.UseAntiforgery();
-app.MapRazorPages();
+
+// Добавляем авторизацию
+app.UseAuthorization();
+
+// Настройка Razor Pages и Razor Components
+app.MapRazorPages(); // Добавляем поддержку Razor Pages
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode(); // Добавляем поддержку Razor Components
 
 app.Run();
