@@ -1,7 +1,14 @@
-﻿
+﻿@inject SingletoneUser SingletoneUser
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await SingletoneUser.LoadUserFromStorage();
+    }
+}
 @inherits LayoutComponentBase
 
-<Toast />
+
 <div class="page">
     <div class="sidebar">
         <NavMenu />

@@ -1,4 +1,4 @@
-using Blazored.LocalStorage;
+using Blazored.SessionStorage;
 using CpCinemaBlazor.ApiRequest;
 using CpCinemaBlazor.Components;
 using Blazored.Toast; // Добавьте эту строку
@@ -12,7 +12,10 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents(); // Добавляем поддержку Razor Components
 builder.Services.AddBlazoredToast();
 // Регистрация Blazored.LocalStorage
-builder.Services.AddBlazoredLocalStorage();
+// Регистрация SingletoneUser как scoped сервис
+builder.Services.AddBlazoredSessionStorage();
+builder.Services.AddScoped<SingletoneUser>(sp =>
+    new SingletoneUser(sp.GetRequiredService<ISessionStorageService>()));
 builder.Services.AddScoped<ApiRequestService>();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5005/") });
 
@@ -22,8 +25,6 @@ builder.Services.AddHttpClient("API", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5005/");
 });
-// Регистрация SingletoneUser как scoped сервис
-builder.Services.AddScoped<SingletoneUser>();
 
 var app = builder.Build();
 

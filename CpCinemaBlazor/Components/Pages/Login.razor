@@ -7,6 +7,7 @@
 @using CpCinemaBlazor.ApiRequest
 @using System.IdentityModel.Tokens.Jwt
 @using System.Security.Claims
+@using static CpCinemaBlazor.ApiRequest.Model.User
 
 @inject SingletoneUser SingletoneUser
 @inject IToastService ToastService
@@ -16,22 +17,22 @@
 
 <style>
     .form-floating input {
-        height: 48px;
-        font-size: 16px;
+    height: 48px;
+    font-size: 16px;
     }
 
     .btn-primary {
-        background-color: #007bff;
-        border-color: #007bff;
+    background-color: #007bff;
+    border-color: #007bff;
     }
 
-        .btn-primary:hover {
-            background-color: #0056b3;
-            border-color: #004085;
-        }
+    .btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #004085;
+    }
 
     .text-danger {
-        color: red;
+    color: red;
     }
 </style>
 <PageTitle>Log in</PageTitle>
@@ -69,17 +70,19 @@
 </div>
 
 @code {
-    protected override void OnInitialized()
-    {
-        // Подписываемся на событие изменения состояния аутентификации
-        SingletoneUser.OnAuthStateChanged += StateHasChanged;
-    }
+    AuthUser user = new AuthUser();
+    [Inject] private ApiRequestService ApiRequest { get; set; }
 
-    public void Dispose()
-    {
-        // Отписываемся от события при уничтожении компонента
-        SingletoneUser.OnAuthStateChanged -= StateHasChanged;
-    }
+    private string? errorMessage;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
 
     private sealed class InputModel
     {
@@ -90,55 +93,51 @@
         [Required]
         [DataType(DataType.Password)]
         public string Password { get; set; } = "";
+
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
     }
-
-    private InputModel Input { get; set; } = new();
-
-    public async Task AuthBtn()
+    async Task AuthBtn()
     {
         try
         {
-            // Имитация проверки данных пользователя
-            if (Input.Email == "test@example.com" && Input.Password == "password")
+            user.Email = Input.Email;
+            user.Password = Input.Password;
+
+            var token = await ApiRequest.AuthorizationAsync(user);
+
+            if (!string.IsNullOrEmpty(token))
             {
-                var token = "your_jwt_token_here"; // Замените на реальный токен
+                var principal = JwtService.DecodeJwtToken(token);
 
-                if (!string.IsNullOrEmpty(token))
-                {
-                    Navigation.NavigateTo("/profile");
+                int Id = Convert.ToInt32(principal.FindFirst("id_User")?.Value);
+                string NameT = principal.FindFirst("Name")?.Value;
+                string About = principal.FindFirst("AboutMe")?.Value;
+                bool Admin = Convert.ToBoolean(principal.FindFirst("isAdmin")?.Value);
 
-                    var principal = JwtService.DecodeJwtToken(token);
-                    int Id = Convert.ToInt32(principal.FindFirst("id_User")?.Value);
-                    string NameT = principal.FindFirst("Name")?.Value ?? "Неизвестный";
-                    string About = principal.FindFirst("AboutMe")?.Value ?? "Нет информации";
-                    bool Admin = Convert.ToBoolean(principal.FindFirst("isAdmin")?.Value);
+                // Создаем объект CurUser
+                var currentUser = new CurUser
+                    {
+                        id_User = Id,
+                        AboutMe = About,
+                        Name = NameT,
+                        isAdmin = Admin,
+                        Token = token
+                    };
 
-                    // Авторизация пользователя через SingletoneUser
-                    await SingletoneUser.Login(new CurUser
-                        {
-                            id_User = Id,
-                            AboutMe = About,
-                            Name = NameT,
-                            isAdmin = Admin,
-                            Token = token
-                        });
+                // Сохраняем пользователя через SingletoneUser
+                await SingletoneUser.Login(currentUser);
 
-                    ToastService.ShowSuccess("Авторизация прошла успешно!");
-                }
-                else
-                {
-                    ToastService.ShowError("Авторизация не пройдена! Логин или пароль неверные.");
-                }
+                Navigation.NavigateTo("/counter");
             }
             else
             {
-                ToastService.ShowError("Неверный email или пароль.");
+                errorMessage = "Authorization failed: No token received";
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Ошибка при авторизации пользователя.");
-            ToastService.ShowError($"Ошибка авторизации: {ex.Message}");
+            errorMessage = $"Authorization failed: {ex.Message}";
         }
     }
 
@@ -148,12 +147,20 @@
         {
             var handler = new JwtSecurityTokenHandler();
 
+            // Проверяем, является ли токен валидным JWT
             if (handler.CanReadToken(token))
             {
+                // Декодируем токен
                 var jwtToken = handler.ReadJwtToken(token);
+
+                // Извлекаем claims (данные) из токена
                 var claims = jwtToken.Claims;
+
+                // Создаем ClaimsPrincipal для работы с данными
                 var identity = new ClaimsIdentity(claims, "jwt");
-                return new ClaimsPrincipal(identity);
+                var principal = new ClaimsPrincipal(identity);
+
+                return principal;
             }
 
             throw new Exception("Invalid JWT token");

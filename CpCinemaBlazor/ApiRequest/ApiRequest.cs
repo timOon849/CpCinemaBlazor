@@ -53,7 +53,7 @@ namespace CpCinemaBlazor.ApiRequest
             }
         }
 
-        public async void EditUserAsync(UserProd user)
+        public async Task EditUserAsync(UserProd user)
         {
             try
             {
@@ -68,7 +68,7 @@ namespace CpCinemaBlazor.ApiRequest
             }
         }
 
-        public async void DeleteUserAsync(int Id)
+        public async Task DeleteUserAsync(int Id)
         {
             try
             {   
